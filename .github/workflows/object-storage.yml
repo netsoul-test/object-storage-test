@@ -15,9 +15,22 @@ jobs:
 
       # 업로드할 파일 생성
       - name: Generate a file
-        run: echo "Hello NHN Cloud Object Storage!" > sample.txt
+        run: echo "Hello NHN Cloud Object Storage!" > aws_with_action.txt
 
-      # AWS S3 CLI 설치
+      # 크레덴셜 생성
+      - name: Create NHN Cloud Credentials
+        id: create-credentials
+        run: |
+          response=$(curl -s -X POST \
+            https://api-identity-infrastructure.nhncloudservice.com/v2.0/users/{api-user-id}/credentials/OS-EC2 \
+            -H "Content-Type: application/json" \
+            -H "X-Auth-Token: {token-id}" \
+            -d '{"tenant_id": "66ac27acad5e42f3b92842a8a4e217b2"}')
+          
+          echo "ACCESS_KEY=$(echo $response | jq -r '.credential.access')" >> $GITHUB_ENV
+          echo "SECRET_KEY=$(echo $response | jq -r '.credential.secret')" >> $GITHUB_ENV
+
+      # AWS CLI 설치
       - name: Install AWS CLI
         run: |
           sudo apt-get update
@@ -26,8 +39,7 @@ jobs:
       # NHN Cloud Object Storage에 업로드
       - name: Upload file to NHN Cloud Object Storage
         run: |
-          aws --endpoint-url https://kr1-api-object-storage.nhncloudservice.com \
-              s3 cp sample.txt s3://obj-test/sample.txt
+          aws --endpoint-url=https://kr1-api-object-storage.nhncloudservice.com s3 cp aws_with_action.txt s3://obj-test/aws_with_action.txt
         env:
-          AWS_ACCESS_KEY_ID: ${{ secrets.NHN_ACCESS_KEY }}
-          AWS_SECRET_ACCESS_KEY: ${{ secrets.NHN_SECRET_KEY }}
+          AWS_ACCESS_KEY_ID: ${{ env.ACCESS_KEY }}
+          AWS_SECRET_ACCESS_KEY: ${{ env.SECRET_KEY }}
