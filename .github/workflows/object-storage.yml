@@ -35,7 +35,12 @@ jobs:
         run: |
           sudo apt-get update
           sudo apt-get install -y awscli
-
+          
+      # AWS의 버전을 확인
+      - name: SHOW AWS CLI VERSION
+        run: |
+          aws --version
+          
       # NHN Cloud Object Storage에 업로드
       - name: Upload file to NHN Cloud Object Storage
         run: |
@@ -43,4 +48,4 @@ jobs:
         env:
           AWS_ACCESS_KEY_ID: ${{ env.ACCESS_KEY }}
           AWS_SECRET_ACCESS_KEY: ${{ env.SECRET_KEY }}
-          AWS_DEFAULT_REGION : "KR1"
+          AWS_EC2_METADATA_DISABLED : true
