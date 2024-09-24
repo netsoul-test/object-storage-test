@@ -43,3 +43,4 @@ jobs:
         env:
           AWS_ACCESS_KEY_ID: ${{ env.ACCESS_KEY }}
           AWS_SECRET_ACCESS_KEY: ${{ env.SECRET_KEY }}
+          AWS_DEFAULT_REGION : "KR1"
