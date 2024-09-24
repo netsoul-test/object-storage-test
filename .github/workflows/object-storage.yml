@@ -1,46 +1,33 @@
-name: Build, Push WAS to NHN Cloud NCR, and Deploy with ArgoCD
+name: Upload to NHN Cloud Object Storage
+
 on:
   push:
     branches:
       - main
+
 jobs:
   upload-to-object-storage:
     runs-on: ubuntu-latest
     steps:
+      # 코드 체크아웃
       - name: Checkout repository
         uses: actions/checkout@v3
 
-      - name: Generate a file to upload
-        run: echo "Hello NHN Cloud Object Storage via API!" > sample.txt
+      # 업로드할 파일 생성
+      - name: Generate a file
+        run: echo "Hello NHN Cloud Object Storage!" > sample.txt
 
-      - name: Generate Auth Token
-        id: get_token
+      # AWS S3 CLI 설치
+      - name: Install AWS CLI
         run: |
-          AUTH_RESPONSE=$(curl -s -X POST https://api-identity-infrastructure.nhncloudservice.com/v2.0/tokens \
-          -H "Content-Type: application/json" \
-          -d '{
-                "auth": {
-                    "tenantId": "66ac27acad5e42f3b92842a8a4e217b2",
-                    "passwordCredentials": {
-                        "username": "giun@netsoultech.com",
-                        "password": "1234"
-                    }
-                }
-            }')
-      
-          TOKEN=$(echo "$AUTH_RESPONSE" | jq -r '.access.token.id')
-          STORAGE_URL=$(echo "$AUTH_RESPONSE" | jq -r '.access.serviceCatalog[] | select(.type=="object-store") | .endpoints[] | select(.region=="KR1") | .publicURL')
-      
-          echo "TOKEN=$TOKEN" >> $GITHUB_ENV
-          echo "STORAGE_URL=$STORAGE_URL" >> $GITHUB_ENV
-      
-      - name: Debugging
-        run: |
-          echo "TOKEN: ${{ env.TOKEN }}"
-          echo "STORAGE_URL: ${{ env.STORAGE_URL }}"
+          sudo apt-get update
+          sudo apt-get install -y awscli
 
-      - name: Upload file to Object Storage
+      # NHN Cloud Object Storage에 업로드
+      - name: Upload file to NHN Cloud Object Storage
         run: |
-          curl -i -X PUT "${{ env.STORAGE_URL }}/obj-test/sample.txt" \
-          -H "X-Auth-Token: ${{ env.TOKEN }}" \
-          -T sample.txt
+          aws --endpoint-url https://kr1-api-object-storage.nhncloudservice.com \
+              s3 cp sample.txt s3://obj-test/sample.txt
+        env:
+          AWS_ACCESS_KEY_ID: ${{ secrets.NHN_ACCESS_KEY }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.NHN_SECRET_KEY }}
