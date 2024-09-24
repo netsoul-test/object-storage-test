@@ -17,6 +17,25 @@ jobs:
       - name: Generate a file
         run: echo "Hello NHN Cloud Object Storage!" > aws_with_action.txt
 
+      # 토큰 발급
+      - name: Generate Auth Token
+        id: get_token
+        run: |
+          AUTH_RESPONSE=$(curl -s -X POST https://api-identity-infrastructure.nhncloudservice.com/v2.0/tokens \
+          -H "Content-Type: application/json" \
+          -d '{
+                "auth": {
+                    "tenantId": "66ac27acad5e42f3b92842a8a4e217b2",
+                    "passwordCredentials": {
+                        "username": "giun@netsoultech.com",
+                        "password": "1234"
+                    }
+                }
+            }')
+      
+          TOKEN=$(echo "$AUTH_RESPONSE" | jq -r '.access.token.id')
+          echo "TOKEN=$TOKEN" >> $GITHUB_ENV
+      
       # 크레덴셜 생성
       - name: Create NHN Cloud Credentials
         id: create-credentials
@@ -24,11 +43,17 @@ jobs:
           response=$(curl -s -X POST \
             https://api-identity-infrastructure.nhncloudservice.com/v2.0/users/{api-user-id}/credentials/OS-EC2 \
             -H "Content-Type: application/json" \
-            -H "X-Auth-Token: {token-id}" \
+            -H "X-Auth-Token: ${{ env.TOKEN }}" \
             -d '{"tenant_id": "66ac27acad5e42f3b92842a8a4e217b2"}')
           
           echo "ACCESS_KEY=$(echo $response | jq -r '.credential.access')" >> $GITHUB_ENV
           echo "SECRET_KEY=$(echo $response | jq -r '.credential.secret')" >> $GITHUB_ENV
+
+      # 크레덴셜 정보 확인
+      - name : debug credential variables
+        run : |
+          echo "Access Key: $ACCESS_KEY"
+          echo "Secret Key: $SECRET_KEY"
 
       # AWS CLI 설치
       - name: Install AWS CLI
