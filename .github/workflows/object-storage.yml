@@ -36,24 +36,22 @@ jobs:
           TOKEN=$(echo "$AUTH_RESPONSE" | jq -r '.access.token.id')
           echo "TOKEN=$TOKEN" >> $GITHUB_ENV
       
-      # 크레덴셜 생성
-      - name: Create NHN Cloud Credentials
-        id: create-credentials
+      # 크레덴셜 조회
+      - name: get NHN Cloud Credentials
+        id: get-credentials
         run: |
-          response=$(curl -s -X POST \
-            https://api-identity-infrastructure.nhncloudservice.com/v2.0/users/{api-user-id}/credentials/OS-EC2 \
-            -H "Content-Type: application/json" \
-            -H "X-Auth-Token: ${{ env.TOKEN }}" \
-            -d '{"tenant_id": "66ac27acad5e42f3b92842a8a4e217b2"}')
+          response=$(curl -X GET \
+            https://api-identity-infrastructure.nhncloudservice.com/v2.0/users/85cea4fd8e674fb484b944dae202a820/credentials/OS-EC2 \
+            -H "X-Auth-Token: ${{ env.TOKEN }}")
           
-          echo "ACCESS_KEY=$(echo $response | jq -r '.credential.access')" >> $GITHUB_ENV
-          echo "SECRET_KEY=$(echo $response | jq -r '.credential.secret')" >> $GITHUB_ENV
+          echo "ACCESS_KEY=$(echo $response | jq -r '.credentials[0].access')" >> $GITHUB_ENV
+          echo "SECRET_KEY=$(echo $response | jq -r '.credentials[0].secret')" >> $GITHUB_ENV
 
       # 크레덴셜 정보 확인
-      - name : debug credential variables
-        run : |
-          echo "Access Key: $ACCESS_KEY"
-          echo "Secret Key: $SECRET_KEY"
+      - name: Debug credential variables
+        run: |
+          echo "Access Key: ${{ env.ACCESS_KEY }}"
+          echo "Secret Key: ${{ env.SECRET_KEY }}"
 
       # AWS CLI 설치
       - name: Install AWS CLI
@@ -62,7 +60,7 @@ jobs:
           sudo apt-get install -y awscli
           
       # AWS의 버전을 확인
-      - name: SHOW AWS CLI VERSION
+      - name: Show AWS CLI version
         run: |
           aws --version
           
@@ -73,4 +71,4 @@ jobs:
         env:
           AWS_ACCESS_KEY_ID: ${{ env.ACCESS_KEY }}
           AWS_SECRET_ACCESS_KEY: ${{ env.SECRET_KEY }}
-          AWS_EC2_METADATA_DISABLED : true
+          AWS_EC2_METADATA_DISABLED: true
